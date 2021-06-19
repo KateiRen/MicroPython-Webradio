@@ -1,4 +1,5 @@
 # Based on the the VS1053 driver for CircuitPython from Uri Shaked, Copyright (C) 2018, Uri Shaked
+# more info here: https://github.com/KateiRen/vs10xx-micropython
 
 import time
 from machine import Pin
