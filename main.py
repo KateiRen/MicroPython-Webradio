@@ -11,7 +11,7 @@ webradios = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live
 
 
 
-station = 3
+station = 5
 
 print("Playing: "+webradios[station][0])
 print(webradios[station][1])
@@ -40,12 +40,26 @@ s.connect(addr)
 
 s.send(bytes('GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n' % (webradios[station][2], webradios[station][1]), 'utf8'))
 # print(s.recv(3200))
+
+
+# eigenes Array einsetzen uns peux a peux füllen...
+
+buf = s.recv(320)
+print(buf)
+print(buf[9:12])
+if buf[9:15] == b'200 OK':
+    print("OK start streaming right away")
+elif buf[9:18] == b'302 Found':
+    print("Need to extract redirect address first")
+else:
+    print("no valid signature found")
+    print(buf)
+
 while True:
     buf = s.recv(32)
+
     if buf:
-        #player.writeData(buf)
-        
-        print(buf)
+        player.writeData(buf)
     else:
         break
 
