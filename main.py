@@ -11,7 +11,7 @@ webradios = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live
 
 
 
-station = 5
+station = 3
 
 print("Playing: "+webradios[station][0])
 print(webradios[station][1])
@@ -49,23 +49,24 @@ print(buf)
 print(buf[9:12])
 if buf[9:15] == b'200 OK':
     print("OK start streaming right away")
+    # optionally skip ahead until mp3 stream is reached
+    buf = s.recv(32)
 elif buf[9:18] == b'302 Found':
     print("Need to extract redirect address first")
 else:
     print("no valid signature found")
     print(buf)
+    buf = None
 
-while True:
+
+while buf:
+    player.writeData(buf)
     buf = s.recv(32)
-
-    if buf:
-        player.writeData(buf)
-    else:
-        break
 
 s.close()
 
 
+# https://docs.micropython.org/en/latest/library/utime.html
 
 # This code snippet is not optimized
 # now = time.ticks_ms()
