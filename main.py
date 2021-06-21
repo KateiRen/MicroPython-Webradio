@@ -10,7 +10,7 @@ webradios = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live
              ["egofm","egofm-ais-edge-400b-dus-dtag-cdn.cast.addradio.de","/egofm/live/mp3/high/stream.mp3?_art=dj0yJmlwPTkxLjQ5LjM2LjE1NiZpZD1pY3NjeGwtd2pub25jbm1iJnQ9MTYyNDA5ODA3MSZzPTc4NjZmMjljI2E5NDQ2ODczZWExYjY5ZDY1ZTlhOTEyNjFiYTBjZWEw",80]]
 
 
-station = 2
+station = 3
 
 spi = SPI(1, vs10xx.SPI_BAUDRATE) # SPI bus id=1 pinout: SCK = 14, MOSI = 13, MISO = 12
 
@@ -23,61 +23,74 @@ player = vs10xx.Player(
     CSPin = None
 )
 
-print("Player set up")
+print("VS10xx Player set up.")
 player.setVolume(0.8) # the range is 0 to 1.0
 
-s = ""
-buf = ""
-
-def connectAndTry():
-    print("Station Name: " +webradios[station][0])
-    print("Station Host: " + webradios[station][1])
-    print("Station Path: " + webradios[station][2])
-    print("Station Port: " + str(webradios[station][3]))
-
-    global s, buf
-    s = socket.socket()
-    addr = socket.getaddrinfo(webradios[station][1], webradios[station][3])[0][-1]
-    print(addr)
-    s.connect(addr)
-    s.send(bytes('GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n' % (webradios[station][2], webradios[station][1]), 'utf8'))
-
-    buf = s.recv(1000)
-    print(buf)
-    print(buf[9:15])
-    if buf[9:15] == b'200 OK':
-        print("OK start streaming")
-        # optionally skip ahead until mp3 stream is reached
-        return "OK"
-    elif buf[9:18] == b'302 Found':
+class Streamer:
+    def __init__(self, stations, station):
+        self.name = stations[station][0]
+        self.host = stations[station][1]
+        self.path = stations[station][2]
+        self.port = stations[station][3]
+        
+    def try2connect(self):
+        print("Station Name: " + self.name)
+        print("Station Host: " + self.host)
+        print("Station Path: " + self.path)
+        print("Station Port: " + str(self.port))
+        s = socket.socket()
+        addr = socket.getaddrinfo(self.host, self.port)[0][-1]
+        # print(addr)
+        s.connect(addr)
+        s.send(bytes('GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n' % (self.path, self.host), 'utf8'))
+        buf = s.recv(1000)
         s.close()
-        print("Need to extract redirect address first")
-        start = str(buf).find("Location: ") + 10 # "Location: " mit überspringen
-        redirect = str(buf)[start:-9] # \r\n\r\n am Ende abschneiden
-        print(redirect)
-        webradios[station][1] = redirect.split("/")[2]
-        webradios[station][2] = redirect[len(webradios[station][1])+7:]
-        print(webradios[station][1])
-        print(webradios[station][2])
-        return "Redirect"
-    else:
-        print("no valid signature found")
-        print(buf)
-        return "Fail"
+        # print(buf)
+        # print(buf[9:15])
+        if buf[9:15] == b'200 OK':
+            print("\nSeems OK to start streaming")
+            return True
+        elif buf[9:18] == b'302 Found':
+            print("\n302 Found, need to extract redirect address first...")
+            start = str(buf).find("Location: ") + 10 # "Location: " mit überspringen
+            redirect = str(buf)[start:-9] # \r\n\r\n am Ende abschneiden
+            # print(redirect)
+            self.host = redirect.split("/")[2]
+            self.path = redirect[len(self.host)+7:]
+            print("Updated Station Host: " + self.host)
+            print("Updated Station Path: " + self.path)
+            return True
+        else:
+            return False
 
+    def connect(self):
+        self.s = socket.socket()
+        addr = socket.getaddrinfo(self.host, self.port)[0][-1]
+        # print(addr)
+        self.s.connect(addr)
+        self.s.send(bytes('GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n' % (self.path, self.host), 'utf8'))
+        buf = self.s.recv(32)
+        if buf[9:15] == b'200 OK':
+            print("\nSeems OK to start streaming")
+            return True
+        else:
+            return False
+    
+    def stream(self):
+        return self.s.recv(32)
 
-if connectAndTry() == "OK":
-    buf = s.recv(32)
-elif connectAndTry() == "OK": # 2nd try, in the meantime the station host and path have been replaced with redirect data
-    buf = s.recv(32)
-else:
-    buf = None
+    def close(self):
+        self.s.close()
 
-while buf:
-    player.writeData(buf)
-    buf = s.recv(32)
+radio = Streamer(webradios, station)
 
-s.close()
+if radio.try2connect(): # and str.try2connect(webradios, station): #initial attempt and 2nd try with potentially updated CDN address
+    if radio.connect():
+        buf = radio.stream()
+        while buf:
+            player.writeData(buf)
+            buf = radio.stream()
+        radio.close()
 
 
 # https://docs.micropython.org/en/latest/library/utime.html
