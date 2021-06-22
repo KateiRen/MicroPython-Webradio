@@ -9,6 +9,7 @@ webradios = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live
              ["Kosmos","radiostreaming.ert.gr","/ert-kosmos",80],
              ["egofm","egofm-ais-edge-400b-dus-dtag-cdn.cast.addradio.de","/egofm/live/mp3/high/stream.mp3?_art=dj0yJmlwPTkxLjQ5LjM2LjE1NiZpZD1pY3NjeGwtd2pub25jbm1iJnQ9MTYyNDA5ODA3MSZzPTc4NjZmMjljI2E5NDQ2ODczZWExYjY5ZDY1ZTlhOTEyNjFiYTBjZWEw",80]]
 
+# FM4 refusing connection, not working yet
 
 station = 3
 
@@ -72,6 +73,7 @@ class Streamer:
         buf = self.s.recv(32)
         if buf[9:15] == b'200 OK':
             print("\nSeems OK to start streaming")
+            # optionally advance to the radio stream start code - but the module takes it without noise
             return True
         else:
             return False
@@ -84,7 +86,7 @@ class Streamer:
 
 radio = Streamer(webradios, station)
 
-if radio.try2connect(): # and str.try2connect(webradios, station): #initial attempt and 2nd try with potentially updated CDN address
+if radio.try2connect(): # check for successful initial connection and fetch CDN redirect, if any
     if radio.connect():
         buf = radio.stream()
         while buf:
@@ -92,19 +94,3 @@ if radio.try2connect(): # and str.try2connect(webradios, station): #initial atte
             buf = radio.stream()
         radio.close()
 
-
-# https://docs.micropython.org/en/latest/library/utime.html
-
-# This code snippet is not optimized
-# now = time.ticks_ms()
-# scheduled_time = task.scheduled_time()
-# if ticks_diff(scheduled_time, now) > 0:
-#     print("Too early, let's nap")
-#     sleep_ms(ticks_diff(scheduled_time, now))
-#     task.run()
-# elif ticks_diff(scheduled_time, now) == 0:
-#     print("Right at time!")
-#     task.run()
-# elif ticks_diff(scheduled_time, now) < 0:
-#     print("Oops, running late, tell task to run faster!")
-#     task.run(run_faster=true)
