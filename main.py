@@ -79,7 +79,7 @@ class Streamer:
             return False
     
     def stream(self):
-        return self.s.recv(32)
+        return self.s.recv(256)
 
     def close(self):
         self.s.close()
