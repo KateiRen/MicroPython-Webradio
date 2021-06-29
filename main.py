@@ -1,17 +1,22 @@
 import vs10xx
 from machine import SPI
 import usocket as socket
+from rotaryencoder import RotaryEncoder
 
-webradios = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live/mp3/128/stream.mp3", 80],
+stations = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live/mp3/128/stream.mp3", 80],
              ["Bayern 3","br-br3-live.cast.addradio.de","/br/br3/live/mp3/128/stream.mp3",80],
-             ["FM4","mp3stream1.apasf.apa.at","/listen.pls", 8000],
              ["egofm","egofm-live.cast.addradio.de","/egofm/live/mp3/high/stream.mp3",80],
              ["Kosmos","radiostreaming.ert.gr","/ert-kosmos",80],
              ["egofm","egofm-ais-edge-400b-dus-dtag-cdn.cast.addradio.de","/egofm/live/mp3/high/stream.mp3?_art=dj0yJmlwPTkxLjQ5LjM2LjE1NiZpZD1pY3NjeGwtd2pub25jbm1iJnQ9MTYyNDA5ODA3MSZzPTc4NjZmMjljI2E5NDQ2ODczZWExYjY5ZDY1ZTlhOTEyNjFiYTBjZWEw",80]]
 
 # FM4 refusing connection, not working yet
+# ["FM4","mp3stream1.apasf.apa.at","/listen.pls", 8000],
 
 station = 3
+volume = 0.8
+
+re = RotaryEncoder(36, 35, 34)  # Read Only Pins verwenden
+print("Rotary Encoder set up.")
 
 spi = SPI(1, vs10xx.SPI_BAUDRATE) # SPI bus id=1 pinout: SCK = 14, MOSI = 13, MISO = 12
 
@@ -33,7 +38,13 @@ class Streamer:
         self.host = stations[station][1]
         self.path = stations[station][2]
         self.port = stations[station][3]
-        
+
+    def updateStation(self):
+        self.name = stations[station][0]
+        self.host = stations[station][1]
+        self.path = stations[station][2]
+        self.port = stations[station][3]       
+
     def try2connect(self):
         print("Station Name: " + self.name)
         print("Station Host: " + self.host)
@@ -78,19 +89,71 @@ class Streamer:
         else:
             return False
     
-    def stream(self):
-        return self.s.recv(256)
+    def stream(self, buffsize):
+        return self.s.recv(buffsize)
 
     def close(self):
         self.s.close()
 
-radio = Streamer(webradios, station)
+radio = Streamer(stations, station)
+print("Streamer set up.")
 
-if radio.try2connect(): # check for successful initial connection and fetch CDN redirect, if any
-    if radio.connect():
-        buf = radio.stream()
+def turnLeft():
+    global volume
+    global station
+    if re.buttonIsPressed():
+        if station > 0:
+            station -= 1
+            print("Senderwechsel auf Preset {0}".format(station))
+            radio.updateStation()
+            connect()
+        else:
+            print("Niedrigster Sender erreicht")
+
+    else:
+        volume = min(1,max(0,volume-0.05))
+        player.setVolume(volume) # the range is 0 to 1.0
+        print("Volume: {0}".format(volume))
+
+def turnRight():
+    global volume
+    global station
+    if re.buttonIsPressed():
+        if station < len(stations)-1:
+            station += 1
+            print("Senderwechsel auf Preset {0}".format(station))
+            radio.updateStation()
+            connect()
+        else:
+            print("Höchster Sender erreicht")
+    else:
+        volume = min(1,max(0,volume+0.05))
+        player.setVolume(volume) # the range is 0 to 1.0
+        print("Volume: {0}".format(volume))
+
+def connect():
+    if radio.try2connect(): # check for successful initial connection and fetch CDN redirect, if any
+        if radio.connect():
+            loop()
+
+
+def loop():
+    while True:
+        re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
+        buf = radio.stream(32)
         while buf:
+            re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
             player.writeData(buf)
-            buf = radio.stream()
-        radio.close()
+            buf = radio.stream(32)       
 
+connect()
+
+# if radio.try2connect(): # check for successful initial connection and fetch CDN redirect, if any
+#     if radio.connect():
+#         buf = radio.stream(32)
+#         while buf:
+#             re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
+#             player.writeData(buf)
+#             buf = radio.stream(32)
+#         radio.close()
+#radio.close()

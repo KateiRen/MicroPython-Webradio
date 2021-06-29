@@ -117,6 +117,7 @@ class Player:
         Setting the volume to 0 will power down the analog part of the chip, 
         thus saving power.
         """
+        volume = max(1,min(0,volume)) # Begrenzen auf Werte zwischen 0 und 1
         self.setChannelVolume(volume, volume)
     
     def setChannelVolume(self, left, right):
