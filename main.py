@@ -1,13 +1,30 @@
 import vs10xx
 from machine import SPI
+from machine import freq
 import usocket as socket
 from rotaryencoder import RotaryEncoder
 
-stations = [["Das Ding","swr-dasding-live.cast.addradio.de", "/swr/dasding/live/mp3/128/stream.mp3", 80],
+stations = [["DASDING","swr-dasding-live.cast.addradio.de", "/swr/dasding/live/mp3/128/stream.mp3", 80],
              ["Bayern 3","br-br3-live.cast.addradio.de","/br/br3/live/mp3/128/stream.mp3",80],
              ["egofm","egofm-live.cast.addradio.de","/egofm/live/mp3/high/stream.mp3",80],
-             ["Kosmos","radiostreaming.ert.gr","/ert-kosmos",80],
-             ["egofm","egofm-ais-edge-400b-dus-dtag-cdn.cast.addradio.de","/egofm/live/mp3/high/stream.mp3?_art=dj0yJmlwPTkxLjQ5LjM2LjE1NiZpZD1pY3NjeGwtd2pub25jbm1iJnQ9MTYyNDA5ODA3MSZzPTc4NjZmMjljI2E5NDQ2ODczZWExYjY5ZDY1ZTlhOTEyNjFiYTBjZWEw",80]]
+             ["egoFM V2", "mp3ad.egofm.c.nmdn.net", "/egofm_128/livestream.mp3?", 80],
+             ["Antenne Bayern Rockantenne", "mp3channels.webradio.antenne.de", "/rockantenne", 80],
+             ["Puls", "streams.br.de", "/puls_2.m3u", 80],
+             ["Deutschlandfunk", "st01.sslstream.dlf.de", "/dlf/01/128/mp3/stream.mp3", 80],
+             ["Freies Sender Kombinat HH", "stream.fsk-hh.org", "/fsk.ogg.m3u", 8000],
+             ["MDR Jump", "mdr-jump-live.cast.addradio.de", "/mdr/jump/live/mp3/128/stream.mp3", 80],
+             ["MDR Sputnik", "mdr-sputnik-live.cast.addradio.de", "/mdr/sputnik/live/mp3/128/stream.mp3", 80],
+             ["NDR Blue", "ndr-ndrblue-live.cast.addradio.de", "/ndr/ndrblue/live/mp3/128/stream.mp3", 80],
+             ["Radio Blau", "stream.radioblau.de", "/", 80],
+             ["Radio France FIP", "direct.fipradio.fr", "/live/fip-midfi.mp3", 80],
+             ["BBC Radio 2", "bbcmedia.ic.llnwd.net", "/stream/bbcmedia_radio2_mf_p", 80],
+             ["Rai Radio 2 Indie", "icestreaming.rai.it", "/15.mp3", 80],
+             ["NPO Radio 2 NL", "icecast.omroep.nl", "/radio2-bb-mp3.m3u", 80],
+             ["NRK P3", "lyd.nrk.no", "/nrk_radio_p3_mp3_h", 80],
+             ["ORF FM 4", "mp3stream1.apasf.apa.at", "/1", 8000],
+             ["Rock Antenne", "mp3.webradio.rockantenne.de", "/", 80],
+             ["Landeswelle Thueringen","stream.landeswelle.de","/lwt/mp3-128/web/stream.mp3",80],
+             ["Sveriges Radio P3", "sverigesradio.se", "/topsy/direkt/164-hi-mp3.pls", 80]]
 
 # FM4 refusing connection, not working yet
 # ["FM4","mp3stream1.apasf.apa.at","/listen.pls", 8000],
@@ -97,6 +114,8 @@ class Streamer:
 
 radio = Streamer(stations, station)
 print("Streamer set up.")
+
+print("Taktrate bei: {0}".format(freq()))
 
 def turnLeft():
     global volume
