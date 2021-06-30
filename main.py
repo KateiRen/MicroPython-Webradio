@@ -107,7 +107,10 @@ class Streamer:
             return False
     
     def stream(self, buffsize):
-        return self.s.recv(buffsize)
+        if buffsize>0:
+            return self.s.recv(buffsize)
+        else:
+            return self.s.read(8192)
 
     def close(self):
         self.s.close()
@@ -158,12 +161,13 @@ def connect():
 
 def loop():
     while True:
-        re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
-        buf = radio.stream(32)
-        while buf:
-            re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
-            player.writeData(buf)
-            buf = radio.stream(32)       
+        #re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
+        player.writeData(radio.stream(0))
+        # buf = radio.stream(12800)
+        # while buf:
+        #     re.evalState(turnRight, turnLeft, None) # keine Funktion für Button press übergeben sondern in den anderen Callbacks auswerten
+        #     player.writeData(buf)
+        #     buf = radio.stream(12800)       
 
 connect()
 
